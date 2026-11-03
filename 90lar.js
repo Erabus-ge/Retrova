@@ -5,8 +5,8 @@
 // Örnek biçim: { title: 'Video başlığı', url: 'https://www.youtube.com/shorts/VIDEO_KIMLIGI' }
 // Boş liste, gerçek video varmış gibi davranmayan üç tasarım kartı gösterir.
 const RETROVA_SHORTS = [
-  { title: 'RETROVA Shorts · 01', url: 'https://www.youtube.com/embed/JJ1EOpfJd6o' },
-  { title: 'RETROVA Shorts · 02', url: 'https://www.youtube.com/embed/eG-Ls7oziBo' }
+  { title: 'RETROVA Shorts · 01', url: 'https://www.youtube.com/shorts/CIGEfZnwiNk' },
+  { title: 'RETROVA Shorts · 02', url: 'https://www.youtube.com/shorts/JJ1EOpfJd6o' }
 ];
 const storageKey90 = 'retrova-shorts-90-v1';
 const root90 = document.querySelector('[data-world90]') || document.body;
@@ -156,6 +156,19 @@ function openVideo90(video, source) {
   iframe.referrerPolicy = 'strict-origin-when-cross-origin';
   iframe.setAttribute('aria-describedby', 'shorts-playback-help');
   get90('shorts-dialog-title').textContent = video.title;
+  // Eski bağımsız sayfa da aynı JavaScript'i kullanır; bağlantıyı gerektiğinde oluştur.
+  let external = get90('shorts-external');
+  if (!external) {
+    external = document.createElement('a');
+    external.id = 'shorts-external';
+    external.className = 'text-link';
+    dialog90.append(external);
+  }
+  external.href = `https://www.youtube.com/shorts/${id}`;
+  external.target = '_blank';
+  external.rel = 'noopener noreferrer';
+  external.textContent = 'Oynatılmıyorsa bu Shorts videosunu YouTube’da izle ↗';
+  get90('shorts-playback-help').textContent = 'Videoyu burada izlemek için oynatıcının ▶ düğmesine bas. YouTube yerleştirmeye izin vermiyorsa veya oynatıcı hata verirse aşağıdaki bağlantı doğrudan seçtiğin Shorts videosunu açar.';
   player90.replaceChildren(iframe);
   dialog90.showModal();
 }
