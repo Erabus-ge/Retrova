@@ -1,3 +1,4 @@
+(() => {
 'use strict';
 
 // Herkese açık seçki: kendi Shorts video bağlantılarınızı ekleyin.
@@ -8,17 +9,19 @@ const RETROVA_SHORTS = [
   { title: 'RETROVA Shorts · 02', url: 'https://www.youtube.com/embed/eG-Ls7oziBo' }
 ];
 const storageKey90 = 'retrova-shorts-90-v1';
-const body90 = document.body;
+const root90 = document.querySelector('[data-world90]') || document.body;
+const body90 = root90;
+const get90 = id => root90.querySelector('#' + id);
 const motionPreference90 = window.matchMedia('(prefers-reduced-motion: reduce)');
-const motionButton90 = document.getElementById('motion90');
+const motionButton90 = get90('motion90');
 let paused90 = motionPreference90.matches;
 let muted90 = false;
 let audio90 = null;
 let audioTimer90;
 let bootTimer90;
 let soundRequest90 = 0;
-const hero90 = document.querySelector('.n90-hero');
-const status90 = document.getElementById('status90');
+const hero90 = root90.querySelector('.n90-hero');
+const status90 = get90('status90');
 
 function updateMotion90() {
   body90.classList.toggle('motion-paused', paused90 || motionPreference90.matches);
@@ -74,8 +77,8 @@ async function bootSound90() {
   } catch { await stopAudio90(); status90.textContent = '90’lar başladı. Ses efekti bu tarayıcıda açılamadı; sessiz devam edebilirsin.'; }
 }
 
-document.getElementById('start90').addEventListener('click', () => {
-  const scene = document.querySelector('.n90-scene');
+get90('start90').addEventListener('click', () => {
+  const scene = root90.querySelector('.n90-scene');
   scene.classList.remove('is-booting');
   hero90.classList.remove('is-starting');
   clearTimeout(bootTimer90);
@@ -88,12 +91,12 @@ document.getElementById('start90').addEventListener('click', () => {
       hero90.classList.remove('is-starting');
     }, 1700);
   }
-  document.getElementById('screen90').textContent = 'PLAY ▶ · KANAL 90';
+  get90('screen90').textContent = 'PLAY ▶ · KANAL 90';
   status90.textContent = muted90 ? '90’lar başladı. Ses efektleri kapalı.' : '90’lar başladı. Anılar ve kasetlik seni bekliyor!';
   // AudioContext yalnızca ziyaretçinin bu düğmeye basmasıyla oluşturulur.
   void bootSound90();
 });
-document.getElementById('mute90').addEventListener('click', event => {
+get90('mute90').addEventListener('click', event => {
   muted90 = !muted90;
   event.currentTarget.setAttribute('aria-pressed', String(muted90));
   event.currentTarget.textContent = muted90 ? 'Ses efektleri: kapalı' : 'Ses efektleri: açık';
@@ -131,9 +134,9 @@ function cleanVideos90(list) {
 }
 let personal90 = [];
 try { personal90 = cleanVideos90(JSON.parse(localStorage.getItem(storageKey90) || '[]')); } catch { /* Gizli modda depolama kullanılamayabilir. */ }
-const gallery90 = document.getElementById('shorts-grid');
-const dialog90 = document.getElementById('shorts-dialog');
-const player90 = document.getElementById('shorts-player');
+const gallery90 = get90('shorts-grid');
+const dialog90 = get90('shorts-dialog');
+const player90 = get90('shorts-player');
 let returnFocus90 = null;
 
 function closeVideo90() {
@@ -152,11 +155,11 @@ function openVideo90(video, source) {
   iframe.allowFullscreen = true;
   iframe.referrerPolicy = 'strict-origin-when-cross-origin';
   iframe.setAttribute('aria-describedby', 'shorts-playback-help');
-  document.getElementById('shorts-dialog-title').textContent = video.title;
+  get90('shorts-dialog-title').textContent = video.title;
   player90.replaceChildren(iframe);
   dialog90.showModal();
 }
-document.getElementById('close-shorts').addEventListener('click', closeVideo90);
+get90('close-shorts').addEventListener('click', closeVideo90);
 dialog90.addEventListener('close', () => { player90.replaceChildren(); returnFocus90?.focus(); });
 
 function renderGallery90() {
@@ -183,7 +186,7 @@ function renderGallery90() {
     button.setAttribute('aria-label', `${video.title}: ${video.url ? 'videoyu aç' : 'video ekle'}`);
     button.addEventListener('click', () => {
       if (video.url) openVideo90(video, button);
-      else { document.querySelector('.n90-editor').open = true; document.getElementById('shorts-url').focus(); }
+      else { root90.querySelector('.n90-editor').open = true; get90('shorts-url').focus(); }
     });
     body.append(heading, info, button); article.append(poster, body); gallery90.append(article);
   });
@@ -191,12 +194,12 @@ function renderGallery90() {
 function savePersonal90() {
   try { localStorage.setItem(storageKey90, JSON.stringify(personal90)); return true; } catch { return false; }
 }
-document.getElementById('shorts-form').addEventListener('submit', event => {
+get90('shorts-form').addEventListener('submit', event => {
   event.preventDefault();
-  const title = document.getElementById('shorts-title').value.trim();
-  const field = document.getElementById('shorts-url');
+  const title = get90('shorts-title').value.trim();
+  const field = get90('shorts-url');
   const url = field.value.trim();
-  const status = document.getElementById('shorts-status');
+  const status = get90('shorts-status');
   if (!title || !shortsId90(url)) { status.textContent = 'Bir başlık ve geçerli bir YouTube video bağlantısı gir.'; field.setAttribute('aria-invalid', 'true'); field.focus(); return; }
   if (personal90.length >= 12) { status.textContent = 'Kişisel kasetliğin en fazla 12 video alabilir. Yeni video eklemek için kişisel listeyi temizle.'; return; }
   field.removeAttribute('aria-invalid');
@@ -204,9 +207,9 @@ document.getElementById('shorts-form').addEventListener('submit', event => {
   const saved = savePersonal90(); renderGallery90(); event.currentTarget.reset();
   status.textContent = saved ? 'Video bu tarayıcıdaki kasetliğine eklendi. Herkese açık seçki değişmedi.' : 'Video bu oturum için eklendi; tarayıcı kalıcı kayda izin vermiyor.';
 });
-document.getElementById('clear-shorts').addEventListener('click', () => {
+get90('clear-shorts').addEventListener('click', () => {
   personal90 = []; const saved = savePersonal90(); renderGallery90();
-  document.getElementById('shorts-status').textContent = saved ? 'Bu tarayıcıya eklenen videolar temizlendi.' : 'Oturumdaki liste temizlendi; tarayıcı depolamasına erişilemiyor.';
+  get90('shorts-status').textContent = saved ? 'Bu tarayıcıya eklenen videolar temizlendi.' : 'Oturumdaki liste temizlendi; tarayıcı depolamasına erişilemiyor.';
 });
 renderGallery90();
 
@@ -214,12 +217,12 @@ renderGallery90();
 const channels90 = ['RETROVA', 'MÜZİK SAATİ', 'ÇİZGİ FİLM', 'OYUN KANALI', 'MAHALLE TV'];
 let channelIndex90 = 0;
 let channelTimer90;
-const television90 = document.querySelector('.n90-tv');
-document.getElementById('channel90').addEventListener('click', () => {
+const television90 = root90.querySelector('.n90-tv');
+get90('channel90').addEventListener('click', () => {
   channelIndex90 = (channelIndex90 + 1) % channels90.length;
-  document.getElementById('channel-label90').textContent = `CH ${channelIndex90 + 1} · STEREO`;
-  document.getElementById('screen90').textContent = channels90[channelIndex90];
-  document.getElementById('channel-status90').textContent = `Kanal ${channelIndex90 + 1} · ${channels90[channelIndex90]}`;
+  get90('channel-label90').textContent = `CH ${channelIndex90 + 1} · STEREO`;
+  get90('screen90').textContent = channels90[channelIndex90];
+  get90('channel-status90').textContent = `Kanal ${channelIndex90 + 1} · ${channels90[channelIndex90]}`;
   television90.classList.remove('is-channeling');
   clearTimeout(channelTimer90);
   if (!paused90 && !motionPreference90.matches) {
@@ -242,14 +245,16 @@ const yearStories90 = {
   1998: ['Karışık kasetin B yüzü.', 'Bir arkadaş için seçilen şarkılar, kapağa yazılan küçük not. Bazen en iyi hediye kendi hazırladığındır.'],
   1999: ['Yeni binyıla bir hatıra bırak.', 'Birlikte çekilen fotoğrafın arkasına tarih yazılıyor. Yıllar geçse de o günün gülümsemesi kalıyor.']
 };
-document.querySelectorAll('[data-year90]').forEach(button => {
+root90.querySelectorAll('[data-year90]').forEach(button => {
   button.addEventListener('click', () => {
     const year = button.dataset.year90;
     const story = yearStories90[year];
     if (!story) return;
-    document.querySelectorAll('[data-year90]').forEach(item => item.setAttribute('aria-pressed', String(item === button)));
-    document.getElementById('year-number90').textContent = year;
-    document.getElementById('year-title90').textContent = story[0];
-    document.getElementById('year-copy90').textContent = story[1];
+    root90.querySelectorAll('[data-year90]').forEach(item => item.setAttribute('aria-pressed', String(item === button)));
+    get90('year-number90').textContent = year;
+    get90('year-title90').textContent = story[0];
+    get90('year-copy90').textContent = story[1];
   });
 });
+
+})();

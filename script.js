@@ -60,6 +60,6 @@ document.querySelectorAll('.product-button').forEach(button => {
     productDialog.showModal();
   });
 });
-document.querySelectorAll('.dialog-close, .dialog-done').forEach(button => {
+productDialog.querySelectorAll('.dialog-close, .dialog-done').forEach(button => {
   button.addEventListener('click', () => productDialog.close());
 });
