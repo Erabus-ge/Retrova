@@ -1,0 +1,90 @@
+name: RETROVA - GitHub Pages
+
+# Yalnızca Actions sekmesinden elle başlatılır. Push yayın başlatmaz.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Kaynak dosyalarını al
+        uses: actions/checkout@v4
+      - name: Yalnızca güncel siteyi hazırla
+        run: |
+          mkdir -p _site
+          cp index.html style.css script.js .nojekyll _site/
+          cp 90lar.html 90lar.css 90lar.js _site/
+          # Yalnız tarayıcıda gereken üyelik dosyaları; klasör kopyalama yok.
+          cp uyelik.css uyelik-core.js uyelik.js supabase-config.js _site/
+          test -s _site/index.html
+          test -s _site/style.css
+          test -s _site/script.js
+          node --check _site/script.js
+          node --check _site/90lar.js
+          node --check _site/uyelik-core.js
+          node --check _site/uyelik.js
+          node --check _site/supabase-config.js
+      - name: Yayın paketini ve herkese açık yapılandırmayı doğrula
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const vm = require('node:vm');
+          const assert = require('node:assert/strict');
+          const expected = ['index.html','style.css','script.js','.nojekyll',
+            '90lar.html','90lar.css','90lar.js','uyelik.css','uyelik-core.js',
+            'uyelik.js','supabase-config.js'].sort();
+          assert.deepEqual(fs.readdirSync('_site').sort(), expected,
+            'Yayın paketinde eksik veya izin verilmeyen dosya var');
+          for (const file of expected) {
+            assert.ok(fs.statSync('_site/' + file).isFile());
+            const text = fs.readFileSync('_site/' + file, 'utf8');
+            if (file !== '.nojekyll') assert.ok(text.trim().length > 0, 'Boş yayın dosyası');
+            assert.ok(!/sb_secret_[A-Za-z0-9_-]+|-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/.test(text),
+              'Yayın dosyasında gizli anahtar işareti bulundu');
+            for (const token of text.match(/eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/g) || []) {
+              const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString());
+              assert.equal(payload.role, 'anon', 'Yayın JWT anahtarı yalnız anon olabilir');
+            }
+          }
+          const context = { window: {} };
+          vm.runInNewContext(fs.readFileSync('_site/supabase-config.js', 'utf8'), context, { timeout: 1000 });
+          const config = context.window.RETROVA_SUPABASE_CONFIG;
+          assert.ok(config, 'Supabase yapılandırması bulunamadı');
+          const key = config.publishableKey;
+          assert.equal(typeof key, 'string');
+          assert.ok(/^sb_publishable_[A-Za-z0-9_-]+$/.test(key),
+            'Supabase bağlantısında yalnız Publishable Key kullanılabilir');
+          const html = fs.readFileSync('_site/index.html', 'utf8');
+          for (const file of ['uyelik.css','supabase-config.js','uyelik-core.js','uyelik.js']) {
+            assert.ok(html.includes('"' + file + '"'), 'Üyelik dosyasının HTML bağlantısı eksik');
+          }
+          for (const id of ['community-signup','community-login','community-forgot','community-signout','community-recovery']) {
+            assert.ok(html.includes('id="' + id + '"'), 'Üyelik arayüzü eksik');
+          }
+          console.log('11 izinli yayın dosyası doğrulandı; anahtar değerleri yazdırılmadı.');
+          NODE
+      - name: Pages ayarlarını yükle
+        uses: actions/configure-pages@v5
+      - name: Site paketini yükle
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - name: GitHub Pages üzerinde yayınla
+        id: deployment
+        uses: actions/deploy-pages@v5
